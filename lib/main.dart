@@ -1,137 +1,372 @@
 import 'package:flutter/material.dart';
+import 'package:easy_localization/easy_localization.dart';
 
-void main() {
-  runApp(const MyApp());
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  await EasyLocalization.ensureInitialized();
+
+  runApp(
+    EasyLocalization(
+      supportedLocales: const [Locale('en'), Locale('ar')],
+      path: 'assets/translations', 
+      fallbackLocale: const Locale('en'),
+      child: const MyApp(),
+    ),
+  );
 }
 
-class MyApp extends StatelessWidget {
+// -----------------------------------------------------
+// 1. تحويل MyApp إلى StatefulWidget للتحكم بالوضع المظلم
+// -----------------------------------------------------
+class MyApp extends StatefulWidget {
   const MyApp({super.key});
+
+  // هذه دالة سحرية صغيرة تسمح لنا بالوصول لتغيير الثيم من أي صفحة
+  static _MyAppState? of(BuildContext context) => context.findAncestorStateOfType<_MyAppState>();
+
+  @override
+  State<MyApp> createState() => _MyAppState();
+}
+
+class _MyAppState extends State<MyApp> {
+  // الوضع الافتراضي عند تشغيل التطبيق
+  ThemeMode _themeMode = ThemeMode.system;
+
+  // دالة تغيير الوضع (مظلم/فاتح)
+  void toggleTheme() {
+    setState(() {
+      if (_themeMode == ThemeMode.dark) {
+        _themeMode = ThemeMode.light;
+      } else {
+        _themeMode = ThemeMode.dark;
+      }
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      debugShowCheckedModeBanner: false, 
-      home: Scaffold(
-        body: Center(
-          child: SingleChildScrollView( 
-            padding: const EdgeInsets.all(25),
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                
-                Image.asset('assets/images/logo.png', width: 140,),
-                
-                const SizedBox(height: 40),
+      debugShowCheckedModeBanner: false,
+      localizationsDelegates: context.localizationDelegates,
+      supportedLocales: context.supportedLocales,
+      locale: context.locale,
+      
+      // نربط الوضع المتغير هنا
+      themeMode: _themeMode,
+      
+      theme: ThemeData(
+        brightness: Brightness.light,
+        scaffoldBackgroundColor: Colors.white,
+      ),
+      darkTheme: ThemeData(
+        brightness: Brightness.dark,
+        scaffoldBackgroundColor: Colors.grey[900],
+      ),
+      home: const PotatoLoginPage(), 
+    );
+  }
+}
 
-                TextField(
-                  decoration: InputDecoration(
-                    hintText: 'Potato number',
-                    filled: true,
-                    fillColor: Colors.grey[200],
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(10),
-                      borderSide: BorderSide.none,
-                    ),
+// ==========================================
+// CUSTOM WIDGETS
+// ==========================================
+
+class AppTextField extends StatelessWidget {
+  final String hintTextKey;
+  final IconData prefixIcon;
+  final bool isPassword;
+
+  const AppTextField({
+    super.key,
+    required this.hintTextKey,
+    required this.prefixIcon,
+    this.isPassword = false,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
+
+    return TextField(
+      obscureText: isPassword,
+      decoration: InputDecoration(
+        hintText: hintTextKey.tr(),
+        prefixIcon: Icon(prefixIcon, color: isDarkMode ? Colors.white70 : Colors.grey),
+        suffixIcon: isPassword 
+            ? Icon(Icons.visibility_off, color: isDarkMode ? Colors.white70 : Colors.grey) 
+            : null,
+        filled: true,
+        fillColor: isDarkMode ? Colors.grey[800] : Colors.grey[200],
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(10),
+          borderSide: BorderSide.none,
+        ),
+      ),
+    );
+  }
+}
+
+class PrimaryButton extends StatelessWidget {
+  final String textKey;
+  final VoidCallback onPressed;
+
+  const PrimaryButton({
+    super.key,
+    required this.textKey,
+    required this.onPressed,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return ElevatedButton(
+      onPressed: onPressed,
+      style: ElevatedButton.styleFrom(
+        backgroundColor: const Color.fromARGB(255, 207, 154, 70), 
+        minimumSize: const Size(double.infinity, 50),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(10),
+        ),
+      ),
+      child: Text(
+        textKey.tr(),
+        style: const TextStyle(color: Colors.white, fontSize: 18),
+      ),
+    );
+  }
+}
+
+// ==========================================
+// PROJECT 1: LOGIN PAGE (FIRST PAGE)
+// ==========================================
+
+class PotatoLoginPage extends StatelessWidget {
+  const PotatoLoginPage({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      // --- إضافات جديدة: شريط علوي يحتوي على أزرار التبديل ---
+      appBar: AppBar(
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        actions: [
+          // 1. زر تغيير اللغة
+          IconButton(
+            icon: const Icon(Icons.language, color: Color.fromARGB(255, 207, 154, 70)),
+            onPressed: () {
+              if (context.locale.languageCode == 'en') {
+                context.setLocale(const Locale('ar'));
+              } else {
+                context.setLocale(const Locale('en'));
+              }
+            },
+          ),
+          // 2. زر تغيير الوضع (مظلم/فاتح)
+          IconButton(
+            icon: Icon(
+              Theme.of(context).brightness == Brightness.dark ? Icons.light_mode : Icons.dark_mode,
+              color: const Color.fromARGB(255, 207, 154, 70),
+            ),
+            onPressed: () {
+              MyApp.of(context)?.toggleTheme();
+            },
+          ),
+        ],
+      ),
+      body: Center(
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.all(25),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Image.asset('assets/images/logo.png', width: 140),
+              const SizedBox(height: 40),
+              const AppTextField(hintTextKey: 'potato_number', prefixIcon: Icons.phone),
+              const SizedBox(height: 15),
+              const AppTextField(hintTextKey: 'potato_password', prefixIcon: Icons.lock, isPassword: true),
+              const SizedBox(height: 25),
+              PrimaryButton(
+                textKey: 'potato_in',
+                onPressed: () {
+                  print("Potato Login Clicked");
+                },
+              ),
+              const SizedBox(height: 20),
+              Text('or'.tr(), style: const TextStyle(color: Color.fromARGB(255, 207, 154, 70))),
+              const SizedBox(height: 20),
+              OutlinedButton(
+                onPressed: () {},
+                style: OutlinedButton.styleFrom(
+                  minimumSize: const Size(double.infinity, 50),
+                  side: const BorderSide(color: Color.fromARGB(255, 207, 154, 70)),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(10),
                   ),
                 ),
-                const SizedBox(height: 15),
-
-                TextField(
-                  obscureText: true, 
-                  decoration: InputDecoration(
-                    hintText: 'Potato password',
-                    filled: true,
-                    fillColor: Colors.grey[200],
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(10),
-                      borderSide: BorderSide.none,
-                    ),
-                  ),
-                ),
-
-                Align(
-                  alignment: Alignment.centerRight,
-                  child: TextButton(
-                    onPressed: () {
-                      print("Forgot Potato Clicked");
-                    },
-                    child: const Text(
-                      'Forgot Potato?',
-                      style: TextStyle(color: Color.fromARGB(255, 207, 154, 70)),
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 10),
-
-                ElevatedButton(
-                  onPressed: () {
-                    print("Potato in Clicked");
-                  },
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Color.fromARGB(255, 207, 154, 70),
-                    minimumSize: const Size(double.infinity, 50),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(10),
-                    ),
-                  ),
-                  child: const Text(
-                    'Potato in',
-                    style: TextStyle(color: Colors.white, fontSize: 18),
-                  ),
-                ),
-                
-                const SizedBox(height: 20),
-                const Text('or', style: TextStyle(color: Color.fromARGB(255, 207, 154, 70))),
-                const SizedBox(height: 20),
-
-                OutlinedButton(
-                  onPressed: () {
-                    print("Potato Login Clicked");
-                  },
-                  style: OutlinedButton.styleFrom(
-                    minimumSize: const Size(double.infinity, 50),
-                    side: const BorderSide(color: Color.fromARGB(255, 207, 154, 70)),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(10),
-                    ),
-                  ),
-                  child: const Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Text(
-                        'P ', 
-                        style: TextStyle(color: Color.fromARGB(255, 207, 154, 70), fontWeight: FontWeight.bold, fontSize: 20)
-                      ),
-                      Text(
-                        'Continue with Potato', 
-                        style: TextStyle(color: Color.fromARGB(255, 207, 154, 70), fontSize: 16)
-                      ),
-                    ],
-                  ),
-                ),
-                const SizedBox(height: 25),
-
-                Row(
+                child: Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    const Text("don't have an Potato? "),
-                    TextButton(
-                      onPressed: () {
-                        print("Navigate to Potato Up Page");
-                      },
-                      child: const Text(
-                        'Potato Up',
-                        style: TextStyle(
-                          color: Color.fromARGB(255, 207, 154, 70),
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
+                    const Text(
+                      'P',
+                      style: TextStyle(color: Color.fromARGB(255, 207, 154, 70), fontWeight: FontWeight.bold, fontSize: 20),
+                    ),
+                    const SizedBox(width: 10),
+                    Text(
+                      'continue_potato'.tr(), // تم التعديل هنا
+                      style: const TextStyle(color: Color.fromARGB(255, 207, 154, 70), fontSize: 16),
                     ),
                   ],
-                ), 
+                ),
+              ),
+              const SizedBox(height: 25),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Text('no_potato'.tr()), // تم التعديل هنا
+                  TextButton(
+                    onPressed: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(builder: (context) => const PotatoSignUpPage()),
+                      );
+                    },
+                    child: Text(
+                      'potato_up'.tr(), // تم التعديل هنا
+                      style: const TextStyle(
+                        color: Color.fromARGB(255, 207, 154, 70),
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
+                ],
+              )
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+// ==========================================
+// PROJECT 2: SIGN UP PAGE (SECOND PAGE)
+// ==========================================
+
+class PotatoSignUpPage extends StatefulWidget {
+  const PotatoSignUpPage({super.key});
+
+  @override
+  State<PotatoSignUpPage> createState() => _PotatoSignUpPageState();
+}
+
+class _PotatoSignUpPageState extends State<PotatoSignUpPage> {
+  bool isChecked = false;
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        leading: IconButton(
+          icon: Icon(
+            Icons.arrow_back, 
+            color: Theme.of(context).brightness == Brightness.dark ? Colors.white : Colors.black
+          ),
+          onPressed: () {
+            Navigator.pop(context);
+          },
+        ),
+        // --- تمت إضافة نفس الأزرار هنا أيضاً ---
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.language, color: Color.fromARGB(255, 207, 154, 70)),
+            onPressed: () {
+              if (context.locale.languageCode == 'en') {
+                context.setLocale(const Locale('ar'));
+              } else {
+                context.setLocale(const Locale('en'));
+              }
+            },
+          ),
+          IconButton(
+            icon: Icon(
+              Theme.of(context).brightness == Brightness.dark ? Icons.light_mode : Icons.dark_mode,
+              color: const Color.fromARGB(255, 207, 154, 70),
+            ),
+            onPressed: () {
+              MyApp.of(context)?.toggleTheme();
+            },
+          ),
+        ],
+      ),
+      body: SingleChildScrollView(
+        padding: const EdgeInsets.all(25),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'potato_up'.tr(),
+              style: const TextStyle(fontSize: 28, fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: 30),
+            
+            const AppTextField(hintTextKey: 'potato_name', prefixIcon: Icons.person),
+            const SizedBox(height: 15),
+            const AppTextField(hintTextKey: 'potato_number', prefixIcon: Icons.phone),
+            const SizedBox(height: 15),
+            const AppTextField(hintTextKey: 'potato_password', prefixIcon: Icons.lock, isPassword: true),
+            const SizedBox(height: 15),
+            const AppTextField(hintTextKey: 'confirm_potato_password', prefixIcon: Icons.lock_outline, isPassword: true),
+            const SizedBox(height: 15),
+            const AppTextField(hintTextKey: 'potato_mail', prefixIcon: Icons.email),
+            const SizedBox(height: 20),
+            
+            Row(
+              children: [
+                Checkbox(
+                  value: isChecked,
+                  activeColor: const Color.fromARGB(255, 207, 154, 70),
+                  onChanged: (bool? value) {
+                    setState(() {
+                      isChecked = value ?? false;
+                    });
+                  },
+                ),
+                Expanded(
+                  child: Text('agree_terms'.tr(), style: const TextStyle(fontSize: 14)),
+                ),
               ],
             ),
-          ),
+            const SizedBox(height: 25),
+            
+            PrimaryButton(
+              textKey: 'send_otp',
+              onPressed: () {
+                print("Send Potato OTP Clicked");
+              },
+            ),
+            const SizedBox(height: 25),
+            
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Text('already_have'.tr()),
+                TextButton(
+                  onPressed: () {
+                    Navigator.pop(context);
+                  },
+                  child: Text(
+                    'potato_in'.tr(),
+                    style: const TextStyle(
+                      color: Color.fromARGB(255, 207, 154, 70),
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ],
         ),
       ),
     );
