@@ -14,14 +14,9 @@ void main() async {
     ),
   );
 }
-
-// -----------------------------------------------------
-// 1. تحويل MyApp إلى StatefulWidget للتحكم بالوضع المظلم
-// -----------------------------------------------------
 class MyApp extends StatefulWidget {
   const MyApp({super.key});
 
-  // هذه دالة سحرية صغيرة تسمح لنا بالوصول لتغيير الثيم من أي صفحة
   static _MyAppState? of(BuildContext context) => context.findAncestorStateOfType<_MyAppState>();
 
   @override
@@ -29,10 +24,8 @@ class MyApp extends StatefulWidget {
 }
 
 class _MyAppState extends State<MyApp> {
-  // الوضع الافتراضي عند تشغيل التطبيق
   ThemeMode _themeMode = ThemeMode.system;
 
-  // دالة تغيير الوضع (مظلم/فاتح)
   void toggleTheme() {
     setState(() {
       if (_themeMode == ThemeMode.dark) {
@@ -51,7 +44,6 @@ class _MyAppState extends State<MyApp> {
       supportedLocales: context.supportedLocales,
       locale: context.locale,
       
-      // نربط الوضع المتغير هنا
       themeMode: _themeMode,
       
       theme: ThemeData(
@@ -66,10 +58,6 @@ class _MyAppState extends State<MyApp> {
     );
   }
 }
-
-// ==========================================
-// CUSTOM WIDGETS
-// ==========================================
 
 class AppTextField extends StatelessWidget {
   final String hintTextKey;
@@ -135,22 +123,16 @@ class PrimaryButton extends StatelessWidget {
   }
 }
 
-// ==========================================
-// PROJECT 1: LOGIN PAGE (FIRST PAGE)
-// ==========================================
-
 class PotatoLoginPage extends StatelessWidget {
   const PotatoLoginPage({super.key});
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      // --- إضافات جديدة: شريط علوي يحتوي على أزرار التبديل ---
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
         actions: [
-          // 1. زر تغيير اللغة
           IconButton(
             icon: const Icon(Icons.language, color: Color.fromARGB(255, 207, 154, 70)),
             onPressed: () {
@@ -161,7 +143,6 @@ class PotatoLoginPage extends StatelessWidget {
               }
             },
           ),
-          // 2. زر تغيير الوضع (مظلم/فاتح)
           IconButton(
             icon: Icon(
               Theme.of(context).brightness == Brightness.dark ? Icons.light_mode : Icons.dark_mode,
@@ -212,7 +193,7 @@ class PotatoLoginPage extends StatelessWidget {
                     ),
                     const SizedBox(width: 10),
                     Text(
-                      'continue_potato'.tr(), // تم التعديل هنا
+                      'continue_potato'.tr(), 
                       style: const TextStyle(color: Color.fromARGB(255, 207, 154, 70), fontSize: 16),
                     ),
                   ],
@@ -222,7 +203,7 @@ class PotatoLoginPage extends StatelessWidget {
               Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Text('no_potato'.tr()), // تم التعديل هنا
+                  Text('no_potato'.tr()),
                   TextButton(
                     onPressed: () {
                       Navigator.push(
@@ -231,7 +212,7 @@ class PotatoLoginPage extends StatelessWidget {
                       );
                     },
                     child: Text(
-                      'potato_up'.tr(), // تم التعديل هنا
+                      'potato_up'.tr(),
                       style: const TextStyle(
                         color: Color.fromARGB(255, 207, 154, 70),
                         fontWeight: FontWeight.bold,
@@ -247,10 +228,6 @@ class PotatoLoginPage extends StatelessWidget {
     );
   }
 }
-
-// ==========================================
-// PROJECT 2: SIGN UP PAGE (SECOND PAGE)
-// ==========================================
 
 class PotatoSignUpPage extends StatefulWidget {
   const PotatoSignUpPage({super.key});
@@ -277,7 +254,6 @@ class _PotatoSignUpPageState extends State<PotatoSignUpPage> {
             Navigator.pop(context);
           },
         ),
-        // --- تمت إضافة نفس الأزرار هنا أيضاً ---
         actions: [
           IconButton(
             icon: const Icon(Icons.language, color: Color.fromARGB(255, 207, 154, 70)),
